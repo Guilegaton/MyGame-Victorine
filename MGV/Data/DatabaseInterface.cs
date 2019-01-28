@@ -11,16 +11,19 @@ namespace MGV.Data
     {
         #region Private Fields
 
+        private static DatabaseInterface _instance;
         private readonly ILogger _logger;
 
         #endregion Private Fields
-        
 
-        public DatabaseInterface(ILogger logger)
+        #region Private Constructors
+
+        private DatabaseInterface(ILogger logger)
         {
             _logger = logger;
         }
-        
+
+        #endregion Private Constructors
 
         #region Public Methods
 
@@ -73,6 +76,16 @@ namespace MGV.Data
                 connection.Close();
                 return false;
             }
+        }
+
+        public static DatabaseInterface GetInterface(ILogger logger)
+        {
+            if (_instance == null)
+            {
+                _instance = new DatabaseInterface(logger);
+            }
+
+            return _instance;
         }
 
         #endregion Public Methods
