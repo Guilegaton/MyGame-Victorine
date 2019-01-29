@@ -1,15 +1,15 @@
-﻿using MGV.Models;
-using MGV.Share;
+﻿using MGV.Share;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using Rule = MGV.Models.Rule;
 
 namespace MGV.Data.Repositories
 {
-    public class QuizzeRepository : IRepository<Quiz>
+    public class RuleRepository : IRepository<Rule>
     {
         #region Private Fields
 
@@ -22,7 +22,7 @@ namespace MGV.Data.Repositories
 
         #region Public Constructors
 
-        public QuizzeRepository(string connectionString, ILogger logger)
+        public RuleRepository(string connectionString, ILogger logger)
         {
             _connectionString = connectionString;
             _logger = logger;
@@ -33,21 +33,22 @@ namespace MGV.Data.Repositories
 
         #region Public Methods
 
-        public void Create(Quiz item)
+        public void Create(Rule item)
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
-                        "INSERT INTO Quizzes(Name, Description, CreatedAt)" +
-                        "Values(@name, @description, @createdAt)",
+                        "INSERT INTO Rules(Name, Description, CreatedAt, QuizId)" +
+                        "Values(@name, @description, @createdAt, @quizId)",
                         connection,
                         new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = item.Name },
                         new SqliteParameter { ParameterName = "@description", DbType = DbType.Binary, Value = item.Description },
-                        new SqliteParameter { ParameterName = "@createdAt", DbType = DbType.String, Value = DateTime.Now.ToString() }
+                        new SqliteParameter { ParameterName = "@createdAt", DbType = DbType.String, Value = DateTime.Now.ToString() },
+                        new SqliteParameter { ParameterName = "@quizId", DbType = DbType.String, Value = item.QuizId }
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Quiz not created: {item.Name}");
+                    _logger.LogError($"Rule not created: {item.Name}");
                 }
             }
 
@@ -65,18 +66,18 @@ namespace MGV.Data.Repositories
             using (var connection = new SqliteConnection(_connectionString))
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
-                        "Delete From Quizzes Where Quizzes.Id = @id",
+                        "Delete From Rules Where Rules.Id = @id",
                         connection,
                         new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Quiz not removed: {id}");
+                    _logger.LogError($"Rule not removed: {id}");
                 }
             }
             using (var fileObjRepository = new FileObjectRepository(_connectionString, _logger))
             {
-                fileObjRepository.DeleteAllFilesFromObject<Quiz>(id);
+                fileObjRepository.DeleteAllFilesFromObject<Rule>(id);
             }
         }
 
@@ -89,19 +90,19 @@ namespace MGV.Data.Repositories
             }
         }
 
-        public Quiz Get(int id)
+        public Rule Get(int id)
         {
-            Quiz result;
+            Rule result;
             using (var connection = new SqliteConnection(_connectionString))
             {
-                result = _databaseInterface.ExecuteCustomQuery<Quiz>(
-                        "Select * From Quizzes Where Quizzes.Id = @id",
+                result = _databaseInterface.ExecuteCustomQuery<Rule>(
+                        "Select * From Rules Where Rules.Id = @id",
                         connection,
                         new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
                     ).FirstOrDefault();
                 if (result == null)
                 {
-                    _logger.LogError($"Quiz not find: {id}");
+                    _logger.LogError($"Rule not find: {id}");
                     return result;
                 }
             }
@@ -114,18 +115,18 @@ namespace MGV.Data.Repositories
             return result;
         }
 
-        public IEnumerable<Quiz> GetAll()
+        public IEnumerable<Rule> GetAll()
         {
-            IEnumerable<Quiz> result = Enumerable.Empty<Quiz>();
+            IEnumerable<Rule> result = Enumerable.Empty<Rule>();
             using (var connection = new SqliteConnection(_connectionString))
             {
-                result = _databaseInterface.ExecuteCustomQuery<Quiz>(
-                        "Select * From Quizzes",
+                result = _databaseInterface.ExecuteCustomQuery<Rule>(
+                        "Select * From Rules",
                         connection
                     );
                 if (result == null)
                 {
-                    _logger.LogError($"Quizzes not find");
+                    _logger.LogError($"Rules not find");
                 }
             }
 
@@ -140,14 +141,14 @@ namespace MGV.Data.Repositories
             return result;
         }
 
-        public void Update(Quiz item)
+        public void Update(Rule item)
         {
-            Quiz oldItem = Get(item.Id);
+            Rule oldItem = Get(item.Id);
 
             using (var connection = new SqliteConnection(_connectionString))
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
-                        "Update Quizzes" +
+                        "Update Rules" +
                         "Set Name = @name, Description = @description)" +
                         "Where Id = @id",
                         connection,
@@ -157,7 +158,7 @@ namespace MGV.Data.Repositories
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Quiz not updated: {item.Id}, {item.Name}");
+                    _logger.LogError($"Rule not updated: {item.Id}, {item.Name}");
                 }
             }
 

@@ -116,6 +116,33 @@ namespace MGV.Data.Repositories
             return result;
         }
 
+        public IEnumerable<File> GetFiles(BaseEntity item)
+        {
+            IEnumerable<int> filesIds;
+            IEnumerable<File> result;
+
+            filesIds = GetAllFileIdForObject(item);
+            using (var fileRepo = new FileRepository(_connectionString, _logger))
+            {
+                result = filesIds.Select(fileId => fileRepo.Get(fileId));
+            }
+
+            return result;
+        }
+
+        public void UpdateFilesForObject(BaseEntity newItem, BaseEntity oldItem)
+        {
+            foreach (var newFile in newItem.Files.Except(oldItem.Files))
+            {
+                AddFileToObject(newItem, newFile.Id);
+            }
+            foreach (var oldFile in oldItem.Files.Except(newItem.Files))
+            {
+                DeleteFileFromObject(newItem, oldFile.Id);
+            }
+
+        }
+
         #endregion Public Methods
     }
 }
