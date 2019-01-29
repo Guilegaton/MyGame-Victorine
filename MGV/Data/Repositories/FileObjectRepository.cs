@@ -1,19 +1,21 @@
 ﻿using MGV.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
 namespace MGV.Data.Repositories
 {
-    public class FileObjectRepository
+    public class FileObjectRepository : IDisposable
     {
         #region Private Fields
 
         private readonly string _connectionString;
         private readonly DatabaseInterface _databaseInterface;
         private readonly ILogger _logger;
+        private bool _isDisposed = false;
 
         #endregion Private Fields
 
@@ -65,6 +67,15 @@ namespace MGV.Data.Repositories
                 {
                     _logger.LogError($"FileObject not removed: {fileId}, {item.Id}, {item.GetType()}");
                 }
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                GC.SuppressFinalize(this);
+                _isDisposed = true;
             }
         }
 

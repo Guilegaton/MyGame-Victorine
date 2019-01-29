@@ -2,6 +2,7 @@
 using MGV.Share;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace MGV.Data.Repositories
         private readonly string _connectionString;
         private readonly DatabaseInterface _databaseInterface;
         private readonly ILogger _logger;
+        private bool _isDisposed = false;
 
         #endregion Private Fields
 
@@ -24,7 +26,7 @@ namespace MGV.Data.Repositories
         {
             _connectionString = connectionString;
             _logger = logger;
-            _databaseInterface = DatabaseInterface.GetInterface(_logger);
+            _databaseInterface = DatabaseInterface.GetInstance(_logger);
         }
 
         #endregion Public Constructors
@@ -46,7 +48,7 @@ namespace MGV.Data.Repositories
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Element not created: {item.Name}, {item.Extension}, {item.FileType}");
+                    _logger.LogError($"File not created: {item.Name}, {item.Extension}, {item.FileType}");
                 }
             }
         }
@@ -62,9 +64,18 @@ namespace MGV.Data.Repositories
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Element not removed: {id}");
+                    _logger.LogError($"File not removed: {id}");
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                GC.SuppressFinalize(this);
+                _isDisposed = true;
+            }  
         }
 
         public File Get(int id)
@@ -79,7 +90,7 @@ namespace MGV.Data.Repositories
                     ).FirstOrDefault();
                 if (result == null)
                 {
-                    _logger.LogError($"Element not find: {id}");
+                    _logger.LogError($"File not find: {id}");
                 }
             }
             return result;
@@ -91,12 +102,12 @@ namespace MGV.Data.Repositories
             using (var connection = new SqliteConnection(_connectionString))
             {
                 result = _databaseInterface.ExecuteCustomQuery<File>(
-                        "Select * From Files Where Files.Id = @id",
+                        "Select * From Files",
                         connection
                     );
                 if (result == null)
                 {
-                    _logger.LogError($"Elements not find");
+                    _logger.LogError($"Files not find");
                 }
             }
             return result;
@@ -119,7 +130,7 @@ namespace MGV.Data.Repositories
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Element not updated: {item.Id}, {item.Name}, {item.Extension}, {item.FileType}");
+                    _logger.LogError($"File not updated: {item.Id}, {item.Name}, {item.Extension}, {item.FileType}");
                 }
             }
         }
