@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace MGV.Data.Repositories
 {
-    public class StageRepository : IRepository<Stage>
+    public class EndingRepository : IRepository<Ending>
     {
         #region Private Fields
 
@@ -22,7 +22,7 @@ namespace MGV.Data.Repositories
 
         #region Public Constructors
 
-        public StageRepository(string connectionString, ILogger logger)
+        public EndingRepository(string connectionString, ILogger logger)
         {
             _connectionString = connectionString;
             _logger = logger;
@@ -33,22 +33,22 @@ namespace MGV.Data.Repositories
 
         #region Public Methods
 
-        public void Create(Stage item)
+        public void Create(Ending item)
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
-                        "INSERT INTO Stages(Name, Description, CreatedAt, QuizId)" +
-                        "Values(@name, @description, @createdAt, @quizId)",
+                        "INSERT INTO Endings(Name, Description, CreatedAt, StageId)" +
+                        "Values(@name, @description, @createdAt, @stageId)",
                         connection,
                         new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = item.Name },
                         new SqliteParameter { ParameterName = "@description", DbType = DbType.Binary, Value = item.Description },
                         new SqliteParameter { ParameterName = "@createdAt", DbType = DbType.String, Value = DateTime.Now.ToString() },
-                        new SqliteParameter { ParameterName = "@quizId", DbType = DbType.String, Value = item.QuizId }
+                        new SqliteParameter { ParameterName = "@stageId", DbType = DbType.String, Value = item.StageId }
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Stage not created: {item.Name}");
+                    _logger.LogError($"Ending not created: {item.Name}");
                 }
             }
 
@@ -66,7 +66,7 @@ namespace MGV.Data.Repositories
             using (var connection = new SqliteConnection(_connectionString))
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
-                        "Delete From Stages Where Rules.Id = @id",
+                        "Delete From Endings Where Endings.Id = @id",
                         connection,
                         new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
                     );
@@ -77,7 +77,7 @@ namespace MGV.Data.Repositories
             }
             using (var fileObjRepository = new FileObjectRepository(_connectionString, _logger))
             {
-                fileObjRepository.DeleteAllFilesFromObject<Stage>(id);
+                fileObjRepository.DeleteAllFilesFromObject<Ending>(id);
             }
         }
 
@@ -90,19 +90,19 @@ namespace MGV.Data.Repositories
             }
         }
 
-        public Stage Get(int id)
+        public Ending Get(int id)
         {
-            Stage result;
+            Ending result;
             using (var connection = new SqliteConnection(_connectionString))
             {
-                result = _databaseInterface.ExecuteCustomQuery<Stage>(
-                        "Select * From Stages Where Stages.Id = @id",
+                result = _databaseInterface.ExecuteCustomQuery<Ending>(
+                        "Select * From Endings Where Endings.Id = @id",
                         connection,
                         new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
                     ).FirstOrDefault();
                 if (result == null)
                 {
-                    _logger.LogError($"Stage not find: {id}");
+                    _logger.LogError($"Ending not find: {id}");
                     return result;
                 }
             }
@@ -115,18 +115,18 @@ namespace MGV.Data.Repositories
             return result;
         }
 
-        public IEnumerable<Stage> GetAll()
+        public IEnumerable<Ending> GetAll()
         {
-            IEnumerable<Stage> result = Enumerable.Empty<Stage>();
+            IEnumerable<Ending> result = Enumerable.Empty<Ending>();
             using (var connection = new SqliteConnection(_connectionString))
             {
-                result = _databaseInterface.ExecuteCustomQuery<Stage>(
-                        "Select * From Stages",
+                result = _databaseInterface.ExecuteCustomQuery<Ending>(
+                        "Select * From Endings",
                         connection
                     );
                 if (result == null)
                 {
-                    _logger.LogError($"Stages not found");
+                    _logger.LogError($"Endings not found");
                 }
             }
 
@@ -141,14 +141,14 @@ namespace MGV.Data.Repositories
             return result;
         }
 
-        public void Update(Stage item)
+        public void Update(Ending item)
         {
-            Stage oldItem = Get(item.Id);
+            Ending oldItem = Get(item.Id);
 
             using (var connection = new SqliteConnection(_connectionString))
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
-                        "Update Stages" +
+                        "Update Endings" +
                         "Set Name = @name, Description = @description)" +
                         "Where Id = @id",
                         connection,
@@ -158,7 +158,7 @@ namespace MGV.Data.Repositories
                     );
                 if (!result)
                 {
-                    _logger.LogError($"Stage not updated: {item.Id}, {item.Name}");
+                    _logger.LogError($"Ending not updated: {item.Id}, {item.Name}");
                 }
             }
 

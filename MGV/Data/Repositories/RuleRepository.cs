@@ -132,9 +132,9 @@ namespace MGV.Data.Repositories
 
             using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
             {
-                foreach (var quiz in result)
+                foreach (var element in result)
                 {
-                    quiz.Files = fileObjRepo.GetFiles(quiz);
+                    element.Files = fileObjRepo.GetFiles(element);
                 }
             }
 
