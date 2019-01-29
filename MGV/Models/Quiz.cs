@@ -2,7 +2,7 @@
 
 namespace MGV.Models
 {
-    public class Quizze : BaseEntity
+    public class Quiz : BaseEntity
     {
         #region Public Properties
 

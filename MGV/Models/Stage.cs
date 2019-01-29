@@ -8,6 +8,7 @@ namespace MGV.Models
 
         public Ending Ending { get; set; }
         public IEnumerable<Question> Questions { get; set; }
+        public int QuizId { get; set; }
 
         #endregion Public Properties
     }

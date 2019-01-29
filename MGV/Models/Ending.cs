@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace MGV.Models
+﻿namespace MGV.Models
 {
-    public class Ending
+    public class Ending : BaseEntity
     {
+        #region Public Properties
+
+        public int StageId { get; set; }
+
+        #endregion Public Properties
     }
 }

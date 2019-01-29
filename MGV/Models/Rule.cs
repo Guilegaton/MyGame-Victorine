@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace MGV.Models
+﻿namespace MGV.Models
 {
-    public class Rule
+    public class Rule : BaseEntity
     {
+        #region Public Properties
+
+        public int QuizId { get; set; }
+
+        #endregion Public Properties
     }
 }
