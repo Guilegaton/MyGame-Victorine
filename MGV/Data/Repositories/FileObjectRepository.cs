@@ -51,21 +51,39 @@ namespace MGV.Data.Repositories
             }
         }
 
+        public void DeleteAllFilesFromObject<T>(int objectId)
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                bool result = _databaseInterface.ExecuteCustomQuery(
+                        "Delete From Files_Objects " +
+                        "Where ObjectId = @objectId and ObjectType = @objectType",
+                        connection,
+                        new SqliteParameter { ParameterName = "@ObjectId", DbType = DbType.Int32, Value = objectId },
+                        new SqliteParameter { ParameterName = "@objectType", DbType = DbType.Int32, Value = ObjectTypeProvider.For(typeof(T)) }
+                    );
+                if (!result)
+                {
+                    _logger.LogError($"FileObject not removed: {objectId}, {typeof(T)}");
+                }
+            }
+        }
+
         public void DeleteFileFromObject(BaseEntity item, int fileId)
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
                         "Delete From Files_Objects " +
-                        "Where FileID = @fileId and ObjectId = @objectId and ObjectType = @objectType",
+                        "Where ObjectId = @objectId and ObjectType = @objectType and FileId = @fileId",
                         connection,
-                        new SqliteParameter { ParameterName = "@fileId", DbType = DbType.Int32, Value = fileId },
                         new SqliteParameter { ParameterName = "@ObjectId", DbType = DbType.Int32, Value = item.Id },
-                        new SqliteParameter { ParameterName = "@fileId", DbType = DbType.Int32, Value = ObjectTypeProvider.For(item.GetType()) }
+                        new SqliteParameter { ParameterName = "@objectType", DbType = DbType.Int32, Value = ObjectTypeProvider.For(item.GetType()) },
+                        new SqliteParameter { ParameterName = "@fileId", DbType = DbType.Int32, Value = fileId }
                     );
                 if (!result)
                 {
-                    _logger.LogError($"FileObject not removed: {fileId}, {item.Id}, {item.GetType()}");
+                    _logger.LogError($"FileObject not removed: {item.Id},{fileId} ,{item.GetType()}");
                 }
             }
         }
