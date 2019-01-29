@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 
@@ -26,6 +27,16 @@ namespace MGV.Data
         #endregion Private Constructors
 
         #region Public Methods
+
+        public static DatabaseInterface GetInstance(ILogger logger)
+        {
+            if (_instance == null)
+            {
+                _instance = new DatabaseInterface(logger);
+            }
+
+            return _instance;
+        }
 
         public IEnumerable<ReturnType> ExecuteCustomQuery<ReturnType>(string query, SqliteConnection connection, params SqliteParameter[] parameters) where ReturnType : new()
         {
@@ -78,14 +89,30 @@ namespace MGV.Data
             }
         }
 
-        public static DatabaseInterface GetInterface(ILogger logger)
+        public IEnumerable<T> GetSimpleDataList<T>(string query, string fieldName, SqliteConnection connection, params SqliteParameter[] parameters) where T : struct
         {
-            if (_instance == null)
-            {
-                _instance = new DatabaseInterface(logger);
-            }
+            var result = new List<T>();
 
-            return _instance;
+            try
+            {
+                connection.Open();
+                using (var command = new SqliteCommand(query, connection))
+                {
+                    command.Parameters.AddRange(parameters);
+                    var reader = command.ExecuteReader();
+                    result = (from IDataRecord rec in reader
+                              select (T)rec[fieldName]).ToList();
+                    reader.Close();
+                }
+                connection.Close();
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Executing Custom Query with simple data");
+                connection.Close();
+                return null;
+            }
         }
 
         #endregion Public Methods
