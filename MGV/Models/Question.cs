@@ -1,6 +1,7 @@
 ﻿namespace MGV.Models
 {
-    public abstract class Question : BaseEntity
+    [System.ComponentModel.DataAnnotations.Schema.Table("Questions")]
+    public class Question : BaseEntity
     {
         #region Public Properties
 

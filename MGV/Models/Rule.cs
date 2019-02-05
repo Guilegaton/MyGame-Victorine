@@ -1,5 +1,6 @@
 ﻿namespace MGV.Models
 {
+    [System.ComponentModel.DataAnnotations.Schema.Table("Rules")]
     public class Rule : BaseEntity
     {
         #region Public Properties

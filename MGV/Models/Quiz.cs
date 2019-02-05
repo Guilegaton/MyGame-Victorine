@@ -2,6 +2,7 @@
 
 namespace MGV.Models
 {
+    [System.ComponentModel.DataAnnotations.Schema.Table("Quizzes")]
     public class Quiz : BaseEntity
     {
         #region Public Properties
