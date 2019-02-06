@@ -14,12 +14,17 @@ namespace MGV.Shared
 {
     public abstract class GenericRepository<T> : IRepository<T> where T : BaseEntity, new()
     {
+        #region Protected Fields
+
+        protected readonly string _connectionString;
+        protected readonly DatabaseInterface _databaseInterface;
+        protected readonly ILogger _logger;
+        protected readonly string _tableName;
+
+        #endregion Protected Fields
+
         #region Private Fields
 
-        private readonly string _connectionString;
-        private readonly DatabaseInterface _databaseInterface;
-        private readonly ILogger _logger;
-        private readonly string _tableName;
         private bool _isDisposed = false;
 
         #endregion Private Fields

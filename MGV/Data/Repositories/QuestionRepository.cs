@@ -4,11 +4,11 @@ using Microsoft.Extensions.Logging;
 
 namespace MGV.Data.Repositories
 {
-    public class StageRepository : GenericRepository<Stage>, IRepository<Stage>
+    public class QuestionRepository : GenericRepository<Question>, IRepository<Question>
     {
         #region Public Constructors
 
-        public StageRepository(string connectionString, ILogger logger) : base(connectionString, logger)
+        public QuestionRepository(string connectionString, ILogger logger) : base(connectionString, logger)
         {
         }
 

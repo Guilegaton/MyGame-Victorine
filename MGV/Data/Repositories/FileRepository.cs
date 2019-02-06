@@ -1,5 +1,5 @@
 ﻿using MGV.Models;
-using MGV.Share;
+using MGV.Shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
@@ -40,11 +40,12 @@ namespace MGV.Data.Repositories
                 bool result = _databaseInterface.ExecuteCustomQuery(
                         "INSERT INTO Files(Name, AsBytes, FileType, Extension)" +
                         "Values(@name, @asBytes, @fileType, @extension)",
-                        connection,
+                        connection, new SqliteParameter[] {
                         new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = item.Name },
                         new SqliteParameter { ParameterName = "@asBytes", DbType = DbType.Binary, Value = item.AsBytes },
                         new SqliteParameter { ParameterName = "@fileType", DbType = DbType.String, Value = item.FileType },
                         new SqliteParameter { ParameterName = "@extension", DbType = DbType.String, Value = item.Extension }
+                        }
                     );
                 if (!result)
                 {
@@ -59,8 +60,9 @@ namespace MGV.Data.Repositories
             {
                 bool result = _databaseInterface.ExecuteCustomQuery(
                         "Delete From Files Where Files.Id = @id",
-                        connection,
+                        connection, new SqliteParameter[] {
                         new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
+                        }
                     );
                 if (!result)
                 {
@@ -121,12 +123,13 @@ namespace MGV.Data.Repositories
                         "Update Files" +
                         "Set Name = @name, AsBytes = @asBytes, FileType = @fileType, Extension = @extention)" +
                         "Where Id = @id",
-                        connection,
+                        connection, new SqliteParameter[] {
                         new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = item.Name },
                         new SqliteParameter { ParameterName = "@asBytes", DbType = DbType.Binary, Value = item.AsBytes },
                         new SqliteParameter { ParameterName = "@fileType", DbType = DbType.String, Value = item.FileType },
                         new SqliteParameter { ParameterName = "@extention", DbType = DbType.String, Value = item.Extension },
                         new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = item.Id }
+                        }
                     );
                 if (!result)
                 {
