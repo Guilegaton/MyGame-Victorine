@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MGV.Share
+namespace MGV.Shared
 {
-    internal interface IRepository<T> : IDisposable where T : class
+    internal interface IRepository<T> : IDisposable where T : new()
     {
         #region Public Methods
 
