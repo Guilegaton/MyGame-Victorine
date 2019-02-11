@@ -104,8 +104,8 @@ namespace MGV.Data.Repositories
             using (var connection = new SqliteConnection(_connectionString))
             {
                 result = _databaseInterface.GetSimpleDataList<int>(
-                        "Select Files_Objects.FileId From Files_Objects" +
-                        "Where ObjectId = @id And ObjectType = @objectType",
+                        "Select Files_Objects.FileId From Files_Objects " +
+                        "Where ObjectId = @objectId And ObjectType = @objectType",
                         "FileId",
                         connection,
                         new SqliteParameter { ParameterName = "@objectId", DbType = DbType.Int32, Value = item.Id },
