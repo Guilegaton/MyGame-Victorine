@@ -43,7 +43,7 @@ namespace MGV.Shared
 
         #region Public Methods
 
-        public void Create(T item)
+        public virtual void Create(T item)
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
@@ -75,7 +75,7 @@ namespace MGV.Shared
             }
         }
 
-        public void Delete(int id)
+        public virtual void Delete(int id)
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
@@ -105,7 +105,7 @@ namespace MGV.Shared
             }
         }
 
-        public T Get(int id)
+        public virtual T Get(int id)
         {
             T result;
             using (var connection = new SqliteConnection(_connectionString))
@@ -130,7 +130,7 @@ namespace MGV.Shared
             return result;
         }
 
-        public IEnumerable<T> GetAll()
+        public virtual IEnumerable<T> GetAll()
         {
             IEnumerable<T> result = Enumerable.Empty<T>();
             using (var connection = new SqliteConnection(_connectionString))
@@ -156,7 +156,7 @@ namespace MGV.Shared
             return result;
         }
 
-        public void Update(T item)
+        public virtual void Update(T item)
         {
             T oldItem = Get(item.Id);
 
