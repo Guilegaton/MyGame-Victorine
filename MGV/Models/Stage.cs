@@ -7,7 +7,7 @@ namespace MGV.Models
     {
         #region Public Properties
 
-        public IEnumerable<Ending> Ending { get; set; }
+        public IEnumerable<Ending> Endings { get; set; }
         public IEnumerable<Question> Questions { get; set; }
         public int QuizId { get; set; }
 

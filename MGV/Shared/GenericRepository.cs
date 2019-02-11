@@ -16,7 +16,7 @@ namespace MGV.Shared
     {
         #region Protected Fields
 
-        protected readonly string _connectionString;
+        protected readonly SqliteConnection _connectionString;
         protected readonly DatabaseInterface _databaseInterface;
         protected readonly ILogger _logger;
         protected readonly string _tableName;
@@ -31,7 +31,7 @@ namespace MGV.Shared
 
         #region Public Constructors
 
-        public GenericRepository(string connectionString, ILogger logger)
+        public GenericRepository(SqliteConnection connectionString, ILogger logger)
         {
             _connectionString = connectionString;
             _logger = logger;
@@ -45,25 +45,22 @@ namespace MGV.Shared
 
         public virtual void Create(T item)
         {
-            using (var connection = new SqliteConnection(_connectionString))
+            IEnumerable<PropertyInfo> properties = typeof(T).GetProperties().Where(prop => (prop.PropertyType.IsValueType || prop.PropertyType == typeof(string)) && prop.Name != "Id");
+            IEnumerable<string> propertysNames = properties.Select(prop => prop.Name);
+
+            string columnNames = $"({propertysNames.Aggregate((cur, next) => $"{cur}, {next}")})";
+            string parametersNames = $"Values({propertysNames.Select(prop => $"@{prop}").Aggregate((cur, next) => $"{cur}, {next}")})";
+
+            IEnumerable<SqliteParameter> parameters = properties.Select(prop => new SqliteParameter($"@{prop.Name}", prop.GetValue(item)));
+
+            bool result = _databaseInterface.ExecuteCustomQuery(
+                    $"INSERT INTO {_tableName} {columnNames} {parametersNames}",
+                    _connectionString,
+                    parameters.ToArray()
+                );
+            if (!result)
             {
-                IEnumerable<PropertyInfo> properties = typeof(T).GetProperties().Where(prop => (prop.PropertyType.IsValueType || prop.PropertyType == typeof(string)) && prop.Name != "Id");
-                IEnumerable<string> propertysNames = properties.Select(prop => prop.Name);
-
-                string columnNames = $"({propertysNames.Aggregate((cur, next) => $"{cur}, {next}")})";
-                string parametersNames = $"Values({propertysNames.Select(prop => $"@{prop}").Aggregate((cur, next) => $"{cur}, {next}")})";
-
-                IEnumerable<SqliteParameter> parameters = properties.Select(prop => new SqliteParameter($"@{prop.Name}", prop.GetValue(item)));
-
-                bool result = _databaseInterface.ExecuteCustomQuery(
-                        $"INSERT INTO {_tableName} {columnNames} {parametersNames}",
-                        connection,
-                        parameters.ToArray()
-                    );
-                if (!result)
-                {
-                    _logger.LogError($"{typeof(T).Name} not created: {item.Name}");
-                }
+                _logger.LogError($"{typeof(T).Name} not created: {item.Name}");
             }
 
             using (var fileObjRepository = new FileObjectRepository(_connectionString, _logger))
@@ -77,17 +74,14 @@ namespace MGV.Shared
 
         public virtual void Delete(int id)
         {
-            using (var connection = new SqliteConnection(_connectionString))
+            bool result = _databaseInterface.ExecuteCustomQuery(
+                    $"Delete From {_tableName} where Id=@id",
+                    _connectionString,
+                    new SqliteParameter("@id", id)
+                );
+            if (!result)
             {
-                bool result = _databaseInterface.ExecuteCustomQuery(
-                        $"Delete From {_tableName} where Id=@id",
-                        connection,
-                        new SqliteParameter("@id", id)
-                    );
-                if (!result)
-                {
-                    _logger.LogError($"{typeof(T).Name} not deleted: {id}");
-                }
+                _logger.LogError($"{typeof(T).Name} not deleted: {id}");
             }
 
             using (var fileObjRepository = new FileObjectRepository(_connectionString, _logger))
@@ -108,18 +102,16 @@ namespace MGV.Shared
         public virtual T Get(int id)
         {
             T result;
-            using (var connection = new SqliteConnection(_connectionString))
+
+            result = _databaseInterface.ExecuteCustomQuery<T>(
+                    $"Select * From {_tableName} Where {_tableName}.Id = @id",
+                    _connectionString,
+                    new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
+                ).FirstOrDefault();
+            if (result == null)
             {
-                result = _databaseInterface.ExecuteCustomQuery<T>(
-                        $"Select * From {_tableName} Where {_tableName}.Id = @id",
-                        connection,
-                        new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
-                    ).FirstOrDefault();
-                if (result == null)
-                {
-                    _logger.LogError($"{typeof(T).Name} not find: {id}");
-                    return result;
-                }
+                _logger.LogError($"{typeof(T).Name} not find: {id}");
+                return result;
             }
 
             using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
@@ -133,16 +125,13 @@ namespace MGV.Shared
         public virtual IEnumerable<T> GetAll()
         {
             IEnumerable<T> result = Enumerable.Empty<T>();
-            using (var connection = new SqliteConnection(_connectionString))
+            result = _databaseInterface.ExecuteCustomQuery<T>(
+                    $"Select * From {_tableName}",
+                    _connectionString
+                );
+            if (result == null)
             {
-                result = _databaseInterface.ExecuteCustomQuery<T>(
-                        $"Select * From {_tableName}",
-                        connection
-                    );
-                if (result == null)
-                {
-                    _logger.LogError($"{_tableName} not find");
-                }
+                _logger.LogError($"{_tableName} not find");
             }
 
             using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
@@ -160,24 +149,22 @@ namespace MGV.Shared
         {
             T oldItem = Get(item.Id);
 
-            using (var connection = new SqliteConnection(_connectionString))
+
+            IEnumerable<PropertyInfo> properties = typeof(T).GetProperties().Where(prop => (prop.PropertyType.IsValueType || prop.PropertyType == typeof(string)) && prop.Name != "Id");
+
+            string changeValues = $"Set {properties.Select(prop => $"{prop.Name}=@{prop.Name}").Aggregate((cur, next) => $"{cur}, {next}")}";
+
+            IEnumerable<SqliteParameter> parameters = properties.Select(prop => new SqliteParameter($"{prop.Name}", prop.GetValue(item)));
+
+            bool result = _databaseInterface.ExecuteCustomQuery(
+                    $"Update {_tableName} {changeValues} " +
+                    "Where Id = @id",
+                    _connectionString,
+                    parameters.Append(new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = item.Id }).ToArray()
+                );
+            if (!result)
             {
-                IEnumerable<PropertyInfo> properties = typeof(T).GetProperties().Where(prop => (prop.PropertyType.IsValueType || prop.PropertyType == typeof(string)) && prop.Name != "Id");
-
-                string changeValues = $"Set {properties.Select(prop => $"{prop.Name}=@{prop.Name}").Aggregate((cur, next) => $"{cur}, {next}")}";
-
-                IEnumerable<SqliteParameter> parameters = properties.Select(prop => new SqliteParameter($"{prop.Name}", prop.GetValue(item)));
-
-                bool result = _databaseInterface.ExecuteCustomQuery(
-                        $"Update {_tableName} {changeValues} " +
-                        "Where Id = @id",
-                        connection,
-                        parameters.Append(new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = item.Id }).ToArray()
-                    );
-                if (!result)
-                {
-                    _logger.LogError($"{typeof(T).Name} not updated: {item.Id}, {item.Name}");
-                }
+                _logger.LogError($"{typeof(T).Name} not updated: {item.Id}, {item.Name}");
             }
 
             using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
