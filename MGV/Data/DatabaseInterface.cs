@@ -141,7 +141,14 @@ namespace MGV.Data
                         }
                         if (reader.GetValue(inc).GetType() != typeof(DBNull))
                         {
-                            property.SetValue(element, Convert.ChangeType(reader.GetValue(inc), normalType != property.PropertyType ? normalType : property.PropertyType), null);
+                            object value = reader.GetValue(inc);
+
+                            if (property.PropertyType.IsEnum)
+                            {
+                                value = Enum.ToObject(property.PropertyType, value);
+                            }
+
+                            property.SetValue(element,  Convert.ChangeType(value, normalType != property.PropertyType ? normalType : property.PropertyType), null);
                         }
                     }
                 }
