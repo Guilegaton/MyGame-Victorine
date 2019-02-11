@@ -10,6 +10,7 @@ namespace MGV.Models
         public IEnumerable<Ending> Endings { get; set; }
         public IEnumerable<Question> Questions { get; set; }
         public int QuizId { get; set; }
+        public int StageNo { get; set; }
 
         #endregion Public Properties
     }
