@@ -1,4 +1,4 @@
-﻿using MGV.Models;
+﻿using MGV.Entities;
 using System;
 using System.Collections.Generic;
 

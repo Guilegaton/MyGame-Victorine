@@ -1,4 +1,4 @@
-﻿namespace MGV.Models
+﻿namespace MGV.Entities
 {
     public class Player
     {

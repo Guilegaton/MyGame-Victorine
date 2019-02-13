@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MGV.Models
+namespace MGV.Entities
 {
     public class BaseEntity
     {

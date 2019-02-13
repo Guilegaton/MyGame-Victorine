@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MGV.Models
+namespace MGV.Entities
 {
     [System.ComponentModel.DataAnnotations.Schema.Table("Stages")]
     public class Stage : BaseEntity

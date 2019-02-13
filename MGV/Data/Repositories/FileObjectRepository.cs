@@ -1,4 +1,4 @@
-﻿using MGV.Models;
+﻿using MGV.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
@@ -50,7 +50,6 @@ namespace MGV.Data.Repositories
 
         public void DeleteAllFilesFromObject<T>(int objectId)
         {
-
             bool result = _databaseInterface.ExecuteCustomQuery(
                     "Delete From Files_Objects " +
                     "Where ObjectId = @objectId and ObjectType = @objectType",
@@ -66,7 +65,6 @@ namespace MGV.Data.Repositories
 
         public void DeleteFileFromObject(BaseEntity item, int fileId)
         {
-
             bool result = _databaseInterface.ExecuteCustomQuery(
                     "Delete From Files_Objects " +
                     "Where ObjectId = @objectId and ObjectType = @objectType and FileId = @fileId",
@@ -130,7 +128,6 @@ namespace MGV.Data.Repositories
             {
                 DeleteFileFromObject(newItem, oldFile.Id);
             }
-
         }
 
         #endregion Public Methods

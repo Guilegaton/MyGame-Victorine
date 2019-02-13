@@ -1,4 +1,4 @@
-﻿using MGV.Models;
+﻿using MGV.Entities;
 using MGV.Shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;

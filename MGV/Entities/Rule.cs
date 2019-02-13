@@ -1,4 +1,4 @@
-﻿namespace MGV.Models
+﻿namespace MGV.Entities
 {
     [System.ComponentModel.DataAnnotations.Schema.Table("Rules")]
     public class Rule : BaseEntity

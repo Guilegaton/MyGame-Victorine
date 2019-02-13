@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
-using Rule = MGV.Models.Rule;
+using Rule = MGV.Entities.Rule;
 
 namespace MGV.Data.Repositories
 {

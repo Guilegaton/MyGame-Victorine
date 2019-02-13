@@ -1,4 +1,4 @@
-﻿using MGV.Models;
+﻿using MGV.Entities;
 using MGV.Shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -53,7 +53,6 @@ namespace MGV.Data.Repositories
 
         public void Delete(int id)
         {
-
             bool result = _databaseInterface.ExecuteCustomQuery(
                     "Delete From Files Where Files.Id = @id",
                     _connectionString, new SqliteParameter[] {
@@ -88,6 +87,26 @@ namespace MGV.Data.Repositories
             {
                 _logger.LogError($"File not find: {id}");
             }
+            return result;
+        }
+
+        public File Get(string name)
+        {
+            File result = default(File);
+
+            try
+            {
+                result = _databaseInterface.ExecuteCustomQuery<File>(
+                        "Select * From Files Where Files.Name = @name",
+                        _connectionString,
+                        new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = name }
+                    ).Single();
+            }
+            catch(Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
+
             return result;
         }
 
