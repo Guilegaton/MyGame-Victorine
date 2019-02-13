@@ -5,9 +5,10 @@
     {
         #region Public Properties
 
+        public string Category { get; set; }
         public int Cost { get; set; }
-        public QuestionTypes Type { get; set; }
         public int StageId { get; set; }
+        public QuestionTypes Type { get; set; }
 
         #endregion Public Properties
 
