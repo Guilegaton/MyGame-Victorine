@@ -1,6 +1,6 @@
 ﻿using MGV.Data;
 using MGV.Data.Repositories;
-using MGV.Models;
+using MGV.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
@@ -63,6 +63,7 @@ namespace MGV.Shared
                 _logger.LogError($"{typeof(T).Name} not created: {item.Name}");
             }
 
+            if(item.Files != null && item.Files.Count() > 0)
             using (var fileObjRepository = new FileObjectRepository(_connectionString, _logger))
             {
                 foreach (var file in item.Files)
@@ -102,16 +103,44 @@ namespace MGV.Shared
         public virtual T Get(int id)
         {
             T result;
-
-            result = _databaseInterface.ExecuteCustomQuery<T>(
-                    $"Select * From {_tableName} Where {_tableName}.Id = @id",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
-                ).FirstOrDefault();
-            if (result == null)
+            try
             {
-                _logger.LogError($"{typeof(T).Name} not find: {id}");
-                return result;
+                result = _databaseInterface.ExecuteCustomQuery<T>(
+                        $"Select * From {_tableName} Where {_tableName}.Id = @id",
+                        _connectionString,
+                        new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
+                    ).Single();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return null;
+            }
+
+            using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
+            {
+                result.Files = fileObjRepo.GetFiles(result);
+            }
+
+            return result;
+        }
+
+        public virtual T Get(string name)
+        {
+            T result;
+
+            try
+            {
+                result = _databaseInterface.ExecuteCustomQuery<T>(
+                        $"Select * From {_tableName} Where {_tableName}.Name = @name",
+                        _connectionString,
+                        new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = name }
+                    ).Single();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return null;
             }
 
             using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
@@ -148,7 +177,6 @@ namespace MGV.Shared
         public virtual void Update(T item)
         {
             T oldItem = Get(item.Id);
-
 
             IEnumerable<PropertyInfo> properties = typeof(T).GetProperties().Where(prop => (prop.PropertyType.IsValueType || prop.PropertyType == typeof(string)) && prop.Name != "Id");
 

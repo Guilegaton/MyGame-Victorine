@@ -13,6 +13,8 @@ namespace MGV.Shared
 
         T Get(int id);
 
+        T Get(string name);
+
         IEnumerable<T> GetAll();
 
         void Update(T item);
