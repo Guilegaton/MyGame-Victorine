@@ -5,6 +5,11 @@ namespace MGV.Entities
 {
     public class BaseEntity
     {
+        public BaseEntity()
+        {
+            Files = new List<File>();
+        }
+
         #region Public Properties
 
         public DateTime CreatedAt { get; set; }

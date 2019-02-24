@@ -1,4 +1,5 @@
-﻿using MGV.Entities;
+﻿using Dapper;
+using MGV.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,20 +13,19 @@ namespace MGV.Data.Repositories
     {
         #region Private Fields
 
-        private readonly SqliteConnection _connectionString;
-        private readonly DatabaseInterface _databaseInterface;
+        private IDbConnection _connectionString { get { return _transaction.Connection; } }
         private readonly ILogger _logger;
+        private readonly IDbTransaction _transaction;
         private bool _isDisposed = false;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public FileObjectRepository(SqliteConnection connectionString, ILogger logger)
+        public FileObjectRepository(IDbTransaction transaction, ILogger logger)
         {
-            _connectionString = connectionString;
             _logger = logger;
-            _databaseInterface = DatabaseInterface.GetInstance(_logger);
+            _transaction = transaction;
         }
 
         #endregion Public Constructors
@@ -34,15 +34,12 @@ namespace MGV.Data.Repositories
 
         public void AddFileToObject(BaseEntity item, int fileId)
         {
-            bool result = _databaseInterface.ExecuteCustomQuery(
-                    "INSERT INTO Files_Objects(FileId, ObjectId, ObjectType)" +
-                    "Values(@fileId, @objectId, @objectType)",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@fileId", DbType = DbType.Int32, Value = fileId },
-                    new SqliteParameter { ParameterName = "@objectId", DbType = DbType.Int32, Value = item.Id },
-                    new SqliteParameter { ParameterName = "@objectType", DbType = DbType.Int32, Value = ObjectTypeProvider.For(item.GetType()) }
-                );
-            if (!result)
+            var sql = "INSERT INTO Files_Objects(FileId, ObjectId, ObjectType)" +
+                    "Values(@fileId, @objectId, @objectType)";
+
+            var result = _connectionString.Execute(sql, new { fileId, objectId = item.Id, objectType = ObjectTypeProvider.For(item.GetType()) }, _transaction);
+
+            if (result <= 0)
             {
                 _logger.LogError($"File not added: {item.Name}, {fileId}");
             }
@@ -50,14 +47,12 @@ namespace MGV.Data.Repositories
 
         public void DeleteAllFilesFromObject<T>(int objectId)
         {
-            bool result = _databaseInterface.ExecuteCustomQuery(
-                    "Delete From Files_Objects " +
-                    "Where ObjectId = @objectId and ObjectType = @objectType",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@ObjectId", DbType = DbType.Int32, Value = objectId },
-                    new SqliteParameter { ParameterName = "@objectType", DbType = DbType.Int32, Value = ObjectTypeProvider.For(typeof(T)) }
-                );
-            if (!result)
+            var sql = "Delete From Files_Objects " +
+                    "Where ObjectId = @objectId and ObjectType = @objectType";
+
+            var result = _connectionString.Execute(sql, new { objectId, objectType = ObjectTypeProvider.For(typeof(T)) }, _transaction);
+
+            if (result <= 0)
             {
                 _logger.LogError($"FileObject not removed: {objectId}, {typeof(T)}");
             }
@@ -65,15 +60,12 @@ namespace MGV.Data.Repositories
 
         public void DeleteFileFromObject(BaseEntity item, int fileId)
         {
-            bool result = _databaseInterface.ExecuteCustomQuery(
-                    "Delete From Files_Objects " +
-                    "Where ObjectId = @objectId and ObjectType = @objectType and FileId = @fileId",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@ObjectId", DbType = DbType.Int32, Value = item.Id },
-                    new SqliteParameter { ParameterName = "@objectType", DbType = DbType.Int32, Value = ObjectTypeProvider.For(item.GetType()) },
-                    new SqliteParameter { ParameterName = "@fileId", DbType = DbType.Int32, Value = fileId }
-                );
-            if (!result)
+            var sql = "Delete From Files_Objects " +
+                    "Where ObjectId = @objectId and ObjectType = @objectType and FileId = @fileId";
+
+            var result = _connectionString.Execute(sql, new { objectId = item.Id, objectType = ObjectTypeProvider.For(item.GetType()), fileId }, _transaction);
+
+            if (result <= 0)
             {
                 _logger.LogError($"FileObject not removed: {item.Id},{fileId} ,{item.GetType()}");
             }
@@ -88,32 +80,12 @@ namespace MGV.Data.Repositories
             }
         }
 
-        public IEnumerable<int> GetAllFileIdForObject(BaseEntity item)
+        public IEnumerable<File> GetAllFilesForObject(BaseEntity item)
         {
-            IEnumerable<int> result = Enumerable.Empty<int>();
+            var sql = "Select Files.* From  Files INNER JOIN Files_Objects ON Files_Objects.FileId = Files.FileId " +
+                    "Where Files_Objects.ObjectId = @objectId And Files_Objects.ObjectType = @objectType";
 
-            result = _databaseInterface.GetSimpleDataList<int>(
-                    "Select Files_Objects.FileId From Files_Objects " +
-                    "Where ObjectId = @objectId And ObjectType = @objectType",
-                    "FileId",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@objectId", DbType = DbType.Int32, Value = item.Id },
-                    new SqliteParameter { ParameterName = "@objectType", DbType = DbType.Int32, Value = ObjectTypeProvider.For(item.GetType()) }
-                );
-
-            return result;
-        }
-
-        public IEnumerable<File> GetFiles(BaseEntity item)
-        {
-            IEnumerable<int> filesIds;
-            IEnumerable<File> result;
-
-            filesIds = GetAllFileIdForObject(item);
-            using (var fileRepo = new FileRepository(_connectionString, _logger))
-            {
-                result = filesIds.Select(fileId => fileRepo.Get(fileId));
-            }
+            IEnumerable<File> result = _connectionString.Query<File>(sql, new { objectId = item.Id, objectType = (int)ObjectTypeProvider.For(item.GetType()) });
 
             return result;
         }
@@ -122,11 +94,11 @@ namespace MGV.Data.Repositories
         {
             foreach (var newFile in newItem.Files.Except(oldItem.Files))
             {
-                AddFileToObject(newItem, newFile.Id);
+                AddFileToObject(newItem, newFile.FileId);
             }
             foreach (var oldFile in oldItem.Files.Except(newItem.Files))
             {
-                DeleteFileFromObject(newItem, oldFile.Id);
+                DeleteFileFromObject(newItem, oldFile.FileId);
             }
         }
 

@@ -4,11 +4,11 @@
     {
         #region Public Properties
 
-        public byte[] AsBytes { get; set; }
+        public string AsBytes { get; set; }
         public string Extension { get; set; }
         public string FileType { get; set; }
-        public int Id { get; set; }
-        public string Name { get; set; }
+        public int FileId { get; set; }
+        public string FileName { get; set; }
 
         #endregion Public Properties
     }

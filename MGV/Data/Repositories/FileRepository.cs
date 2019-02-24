@@ -1,11 +1,11 @@
-﻿using MGV.Entities;
+﻿using Dapper;
+using MGV.Entities;
 using MGV.Shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 
 namespace MGV.Data.Repositories
 {
@@ -13,20 +13,19 @@ namespace MGV.Data.Repositories
     {
         #region Private Fields
 
-        private readonly SqliteConnection _connectionString;
-        private readonly DatabaseInterface _databaseInterface;
+        private IDbConnection _connectionString { get { return _transaction.Connection; } }
         private readonly ILogger _logger;
+        private readonly IDbTransaction _transaction;
         private bool _isDisposed = false;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public FileRepository(SqliteConnection connectionString, ILogger logger)
+        public FileRepository(IDbTransaction transaction, ILogger logger)
         {
-            _connectionString = connectionString;
             _logger = logger;
-            _databaseInterface = DatabaseInterface.GetInstance(_logger);
+            _transaction = transaction;
         }
 
         #endregion Public Constructors
@@ -35,31 +34,24 @@ namespace MGV.Data.Repositories
 
         public void Create(File item)
         {
-            bool result = _databaseInterface.ExecuteCustomQuery(
-                    "INSERT INTO Files(Name, AsBytes, FileType, Extension)" +
-                    "Values(@name, @asBytes, @fileType, @extension)",
-                    _connectionString, new SqliteParameter[] {
-                        new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = item.Name },
-                        new SqliteParameter { ParameterName = "@asBytes", DbType = DbType.Binary, Value = item.AsBytes },
-                        new SqliteParameter { ParameterName = "@fileType", DbType = DbType.String, Value = item.FileType },
-                        new SqliteParameter { ParameterName = "@extension", DbType = DbType.String, Value = item.Extension }
-                    }
-                );
-            if (!result)
+            var sql = "INSERT INTO Files(Name, AsBytes, FileType, Extension)" +
+                    "Values(@Name, @AsBytes, @fileType, @Extension)";
+
+            var result = _connectionString.Execute(sql, new { item.FileName, item.AsBytes, item.FileType, item.Extension }, _transaction);
+
+            if (result <= 0)
             {
-                _logger.LogError($"File not created: {item.Name}, {item.Extension}, {item.FileType}");
+                _logger.LogError($"File not created: {item.FileName}, {item.Extension}, {item.FileType}");
             }
         }
 
         public void Delete(int id)
         {
-            bool result = _databaseInterface.ExecuteCustomQuery(
-                    "Delete From Files Where Files.Id = @id",
-                    _connectionString, new SqliteParameter[] {
-                        new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
-                    }
-                );
-            if (!result)
+            var sql = "Delete From Files Where Files.FileId = @id";
+
+            var result = _connectionString.Execute(sql, new { id }, _transaction);
+
+            if (result <= 0)
             {
                 _logger.LogError($"File not removed: {id}");
             }
@@ -77,12 +69,10 @@ namespace MGV.Data.Repositories
         public File Get(int id)
         {
             File result;
+            var sql = "Select * From Files Where Files.FileId = @id";
 
-            result = _databaseInterface.ExecuteCustomQuery<File>(
-                    "Select * From Files Where Files.Id = @id",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = id }
-                ).FirstOrDefault();
+            result = _connectionString.QueryFirst<File>(sql, new { id });
+
             if (result == null)
             {
                 _logger.LogError($"File not find: {id}");
@@ -93,16 +83,13 @@ namespace MGV.Data.Repositories
         public File Get(string name)
         {
             File result = default(File);
+            var sql = "Select * From Files Where Files.Name = @name";
 
             try
             {
-                result = _databaseInterface.ExecuteCustomQuery<File>(
-                        "Select * From Files Where Files.Name = @name",
-                        _connectionString,
-                        new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = name }
-                    ).Single();
+                result = _connectionString.QueryFirst<File>(sql, new { name });
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _logger.LogError(e, e.Message);
             }
@@ -112,12 +99,10 @@ namespace MGV.Data.Repositories
 
         public IEnumerable<File> GetAll()
         {
-            IEnumerable<File> result;
+            var sql = "Select * From Files";
 
-            result = _databaseInterface.ExecuteCustomQuery<File>(
-                    "Select * From Files",
-                    _connectionString
-                );
+            IEnumerable<File> result = _connectionString.Query<File>(sql);
+            
             if (result == null)
             {
                 _logger.LogError($"Files not find");
@@ -127,21 +112,15 @@ namespace MGV.Data.Repositories
 
         public void Update(File item)
         {
-            bool result = _databaseInterface.ExecuteCustomQuery(
-                    "Update Files" +
-                    "Set Name = @name, AsBytes = @asBytes, FileType = @fileType, Extension = @extention)" +
-                    "Where Id = @id",
-                    _connectionString, new SqliteParameter[] {
-                        new SqliteParameter { ParameterName = "@name", DbType = DbType.String, Value = item.Name },
-                        new SqliteParameter { ParameterName = "@asBytes", DbType = DbType.Binary, Value = item.AsBytes },
-                        new SqliteParameter { ParameterName = "@fileType", DbType = DbType.String, Value = item.FileType },
-                        new SqliteParameter { ParameterName = "@extention", DbType = DbType.String, Value = item.Extension },
-                        new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = item.Id }
-                    }
-                );
-            if (!result)
+            var sql = "Update Files" +
+                    "Set Name = @Name, AsBytes = @AsBytes, FileType = @FileType, Extension = @Extention)" +
+                    "Where Id = @Id";
+
+            var result = _connectionString.Execute(sql, new { item.FileName, item.AsBytes, item.FileType, item.Extension, item.FileId }, _transaction);
+
+            if (result <= 0)
             {
-                _logger.LogError($"File not updated: {item.Id}, {item.Name}, {item.Extension}, {item.FileType}");
+                _logger.LogError($"File not updated: {item.FileId}, {item.FileName}, {item.Extension}, {item.FileType}");
             }
         }
 

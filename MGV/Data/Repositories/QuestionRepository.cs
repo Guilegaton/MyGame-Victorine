@@ -1,4 +1,5 @@
-﻿using MGV.Entities;
+﻿using Dapper;
+using MGV.Entities;
 using MGV.Shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ namespace MGV.Data.Repositories
     {
         #region Public Constructors
 
-        public QuestionRepository(SqliteConnection connectionString, ILogger logger) : base(connectionString, logger)
+        public QuestionRepository(IDbTransaction transaction, ILogger logger) : base(transaction, logger)
         {
         }
 
@@ -21,23 +22,21 @@ namespace MGV.Data.Repositories
 
         public IEnumerable<Question> GetQuestionsByStage(int stageId)
         {
-            IEnumerable<Question> result;
+            var sql = $"Select * From Questions Where Questions.StageId = @id";
 
-            result = _databaseInterface.ExecuteCustomQuery<Question>(
-                    $"Select * From Questions Where Questions.StageId = @id",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = stageId });
+            IEnumerable<Question> result = _connectionString.Query<Question>(sql, new { id = stageId });
+
             if (result == null)
             {
                 _logger.LogError($"Questions not find with this stage id: {stageId}");
                 return result;
             }
 
-            using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
+            using (var fileObjRepo = new FileObjectRepository(_transaction, _logger))
             {
                 foreach (var item in result)
                 {
-                    item.Files = fileObjRepo.GetFiles(item);
+                    item.Files = fileObjRepo.GetAllFilesForObject(item);
                 }
             }
 

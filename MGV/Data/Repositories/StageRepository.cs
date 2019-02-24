@@ -1,4 +1,5 @@
-﻿using MGV.Entities;
+﻿using Dapper;
+using MGV.Entities;
 using MGV.Shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ namespace MGV.Data.Repositories
     {
         #region Public Constructors
 
-        public StageRepository(SqliteConnection connectionString, ILogger logger) : base(connectionString, logger)
+        public StageRepository(IDbTransaction transaction, ILogger logger) : base(transaction, logger)
         {
         }
 
@@ -21,27 +22,35 @@ namespace MGV.Data.Repositories
 
         public IEnumerable<Stage> GetStagesByQuiz(int quizId)
         {
-            IEnumerable<Stage> result;
+            var sql = $"Select * From Stages Where Stages.QuizId = @id";
 
-            result = _databaseInterface.ExecuteCustomQuery<Stage>(
-                    $"Select * From Stages Where Stages.QuizId = @id",
-                    _connectionString,
-                    new SqliteParameter { ParameterName = "@id", DbType = DbType.Int32, Value = quizId });
+            IEnumerable<Stage> result = _connectionString.Query<Stage>(sql, new { id = quizId });
+            
             if (result == null)
             {
                 _logger.LogError($"Stages not find with this quiz id: {quizId}");
                 return result;
             }
 
-            using (var fileObjRepo = new FileObjectRepository(_connectionString, _logger))
+            using (var fileObjRepo = new FileObjectRepository(_transaction, _logger))
             {
                 foreach (var item in result)
                 {
-                    item.Files = fileObjRepo.GetFiles(item);
+                    item.Files = fileObjRepo.GetAllFilesForObject(item);
                 }
             }
 
             return result;
+        }
+
+        public void GetStageWithAllNestedEntities(ref Stage stage)
+        {
+            using (var endingRepo = new EndingRepository(_transaction, _logger))
+            using (var questionRepo = new QuestionRepository(_transaction, _logger))
+            {
+                stage.Endings = endingRepo.GetEndingsByStage(stage.Id);
+                stage.Questions = questionRepo.GetQuestionsByStage(stage.Id);
+            }
         }
 
         #endregion Public Methods
